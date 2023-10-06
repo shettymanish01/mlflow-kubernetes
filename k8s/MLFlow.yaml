@@ -1,0 +1,92 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mlflow-dev
+spec:
+  selector:
+    matchLabels:
+      app: mlflow
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: mlflow
+    spec:
+      containers:
+        - name: mlflow
+          image: test:latest
+          command: 
+            - "/bin/sh"
+            - "-c"
+            - |
+              mlflow server --backend-store-uri mysql+pymysql://manish:mle@mysql-svc:3306/mlflowdb --default-artifact-root s3://mlflow/ --app-name basic-auth -h 0.0.0.0
+          env:
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: minio-secrets
+                  key: accesskey
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: minio-secrets
+                  key: secretkey
+            - name: AWS_DEFAULT_REGION
+              value: "us-east-1"
+            - name: MLFLOW_S3_ENDPOINT_URL
+              value: "http://"
+            - name: MYSQL_DB_HOST
+              value: "mysql-svc"
+            - name: MYSQL_DB_PORT
+              value: "3306"
+            - name: MYSQL_DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secrets
+                  key: database
+            - name: MYSQL_DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secrets
+                  key: username
+            - name: MYSQL_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secrets
+                  key: password
+          ports:
+            - containerPort: 5000
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: mlflow-svc-dev
+spec:
+  selector:
+    app: mlflow
+  ports:
+    - port: 5000
+      protocol: TCP
+      targetPort: 5000
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: mlflow-ingress-dev
+  annotations:
+    kubernetes.io/ingress.class: "nginx-internal-noauth"
+spec:
+  rules:
+    - host: mlflow-dev.com
+      http:
+        paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: mlflow-svc-dev
+              port:
+                number: 5000
