@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql
+spec:
+  selector:
+    matchLabels:
+      app: mysql
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+        - name: mysql
+          image: mysql/mysql-server:latest
+          env:
+            - name: MYSQL_DATABASE
+              value: mlflowdb
+            - name: MYSQL_USER
+              value: manish
+            - name: MYSQL_PASSWORD
+              value: admin123!
+            - name: MYSQL_ROOT_PASSWORD
+              value: rootadmin123!
+          volumeMounts:
+            - name: mysql-pvc
+              mountPath: "/var/lib/mysql"
+      volumes:
+        - name: mysql-pvc
+          persistentVolumeClaim:
+            claimName: mysql-pvc
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-svc
+spec:
+  selector:
+    app: mysql
+  ports:
+    - port: 3306
+      targetPort: 3306
+
