@@ -19,13 +19,13 @@ spec:
             - "/bin/sh"
             - "-c"
             - |
-              mlflow server --backend-store-uri mysql+pymysql://manish:mle@mysql-svc:3306/mlflowdb --default-artifact-root s3://mlflow/ --app-name basic-auth -h 0.0.0.0
+              mlflow server --backend-store-uri mysql+pymysql://$MYSQL_DB_USER:$MYSQL_DB_PASSWORD@$MYSQL_DB_HOST:$MYSQL_DB_PORT/$MYSQL_DB_NAME --default-artifact-root s3://mlflow/ --app-name basic-auth -h 0.0.0.0
           env:
             - name: AWS_ACCESS_KEY_ID
               valueFrom:
                 secretKeyRef:
                   name: minio-secrets
-                  key: accesskey
+                  key: user
             - name: AWS_SECRET_ACCESS_KEY
               valueFrom:
                 secretKeyRef:
@@ -62,7 +62,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: mlflow-svc-dev
+  name: mlflow-svc
 spec:
   selector:
     app: mlflow
@@ -77,16 +77,24 @@ kind: Ingress
 metadata:
   name: mlflow-ingress-dev
   annotations:
-    kubernetes.io/ingress.class: "nginx-internal-noauth"
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "PUT, GET, POST, OPTIONS"
+    nginx.ingress.kubernetes.io/cors-allow-credentials: "true"
+    nginx.ingress.kubernetes.io/cors-allow-origin: '*'
+    nginx.ingress.kubernetes.io/client-max-body-size: "0"
+    nginx.ingress.kubernetes.io/proxy-body-size: "0"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "1800"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "1800"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "1800"
 spec:
   rules:
-    - host: mlflow-dev.com
+    - host: mlflow.com
       http:
         paths:
         - path: /
           pathType: Prefix
           backend:
             service:
-              name: mlflow-svc-dev
+              name: mlflow-svc
               port:
                 number: 5000

@@ -17,13 +17,25 @@ spec:
           image: mysql/mysql-server:latest
           env:
             - name: MYSQL_DATABASE
-              value: mlflowdb
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secrets
+                  key: database
             - name: MYSQL_USER
-              value: manish
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secrets
+                  key: username
             - name: MYSQL_PASSWORD
-              value: admin123!
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secrets
+                  key: password
             - name: MYSQL_ROOT_PASSWORD
-              value: rootadmin123!
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secrets
+                  key: rootpassword
           volumeMounts:
             - name: mysql-pvc
               mountPath: "/var/lib/mysql"
@@ -44,4 +56,5 @@ spec:
   ports:
     - port: 3306
       targetPort: 3306
+
 
